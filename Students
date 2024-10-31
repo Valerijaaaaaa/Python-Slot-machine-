@@ -1,0 +1,62 @@
+class Student:
+    def __init__(self, ime, prezime, ocenki):
+        self.ime = ime
+        self.prezime = prezime
+        self.ocenki = ocenki
+
+    def prosek(self):
+        return sum(self.ocenki) / len(self.ocenki)
+
+    def popravi_ocenka(self, index, nova_ocenka):
+        self.ocenki[index] = nova_ocenka
+
+    def dodadi_ocenka(self, ocenka):
+        self.ocenki.append(ocenka)
+
+    def __str__(self):
+        return f"Name: {self.ime} {self.prezime}\nGrades: {self.ocenki}\nAverage: {self.prosek()}"
+
+
+class Fakultet:
+    def __init__(self, ime, studenti):
+        self.ime = ime
+        self.studenti = studenti
+        self.najdobar = False
+        self.najlos = False
+
+    def prosek(self):
+        prosek_na_studenti = [student.prosek() for student in self.studenti]
+        return sum(prosek_na_studenti) / len(prosek_na_studenti)
+    def get_prosek(self, student):
+        return student.prosek()
+
+    def najdobar_student(self):
+        self.najdobar = max(self.studenti, key=self.get_prosek)
+        return self.najdobar
+
+    def najlosh_student(self):
+        self.najlos = min(self.studenti, key=self.get_prosek)
+        return self.najlos
+
+    def __str__(self):
+        my_str = ""
+        for student in self.studenti:
+            my_str += str(student) + "\n"
+        return my_str
+
+
+student1 = Student("Jovan", "Misini", [10, 9, 8, 10])
+student2 = Student("Mila", "Mitreva", [7, 8, 6, 7])
+student3 = Student("Bojan", "Petrov", [9, 10, 9, 9])
+student4 = Student("Valerija","Ivanova",[7, 10, 9, 8])
+student5 = Student("Jan","Milenov",[10, 10, 9, 10])
+
+fakultet1 = Fakultet("FINKI", [student1, student2, student3, student4, student5])
+
+print(fakultet1)
+
+najdobar = fakultet1.najdobar_student()
+najlosh = fakultet1.najlosh_student()
+
+print(f"Best student:\n{najdobar}")
+print(f"Worst student:\n{najlosh}")
