@@ -1,0 +1,84 @@
+
+from flask import Flask, request, jsonify
+import sqlite3
+
+app = Flask(__name__)
+
+def get_db_connection():
+    conn = sqlite3.connect(r'C:\Users\Valerija\Desktop\finalProject\Final\users_vouchers.db')
+    conn.row_factory = sqlite3.Row
+    return conn
+
+@app.route('/total_spent/<int:user_id>', methods=['GET'])
+def total_spent(user_id):
+    """
+    Get the total spending for a specific user by their ID.
+    :param user_id: User's unique ID
+    :return: JSON response with user ID and total spending
+    """
+    conn = get_db_connection()
+    query = """
+    SELECT user_id, SUM(money_spent) AS total_spent
+    FROM user_spending
+    WHERE user_id = ?
+    GROUP BY user_id
+    """
+    result = conn.execute(query, (user_id,)).fetchone()
+    conn.close()
+    if result:
+        return jsonify({"user_id": result["user_id"], "total_spent": result["total_spent"]}), 200
+    else:
+        return jsonify({"user_id": user_id, "total_spent": 0}), 200
+
+
+# API: Average spending by age group
+@app.route('/average spending_by_age', methods=['GET'])
+def average_spending_by_age():
+    conn = get_db_connection()
+    query = """
+        SELECT
+            CASE
+                WHEN age BETWEEN 18 AND 24 THEN '18-24' 
+                WHEN age BETWEEN 25 AND 30 THEN '25-30'
+                WHEN age BETWEEN 31 AND 36 THEN '31-36'
+                WHEN age BETWEEN 37 AND 47 THEN '37-47'
+                ELSE '>47'
+            END AS age_group,
+            AVG (money_spent) AS average_spent 
+        FROM user_info
+        JOIN user_spending ON user_info.user_id = user_spending.user_id
+        GROUP BY age_group
+    """
+    results = conn.execute(query).fetchall()
+    conn.close()
+    response = {row["age_group"]: row["average_spent"] for row in results}
+    return jsonify(response), 200
+
+
+@app.route('/write_high_spending_user', methods=['POST'])
+def write_high_spending_user():
+    data = request.get_json()
+    user_id= data.get('user_id')
+    total_spending = data.get('total_spending')
+    if not total_spending or not user_id:
+        return jsonify({"error": "Invalid data. User ID and total spending are required."}),400
+
+    if total_spending < 1000:
+        return jsonify({"error": "User has not reached the high spending threshold."}),400
+
+
+    conn = sqlite3.connect(r'C:\Users\Valerija\Desktop\finalProject\Final\users_vouchers.db')
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''INSERT INTO high_spenders (user_id, total_spending) 
+                        VALUES (?, ?)''',(user_id, total_spending))
+        conn.commit()
+        return jsonify({"message": "User added successfully."}),201
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "User already exists."}),409
+    finally:
+        conn.close()
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
+
